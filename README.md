@@ -1,6 +1,6 @@
 # ssSTICI
 
-**Dataset-specific Split-Transformer with Integrated Convolutions for sparse scRNA-seq cell-variant imputation**
+**Sample-specific Split-Transformer with Integrated Convolutions for sparse scRNA-seq cell-variant imputation**
 
 Code accompanying the manuscript:
 
@@ -8,7 +8,7 @@ Code accompanying the manuscript:
 
 ## Overview
 
-Single-cell RNA sequencing (scRNA-seq) can provide both expression measurements and genetic variant calls for individual cells, but the resulting scRNA-seq alignment are extremely sparse and contain false-positive and false-negative base calls. **ssSTICI** adapts the STICI Split-Transformer with Integrated Convolutions framework to this setting by training a separate model **de novo for each sparse scRNA-seq alignment**. The trained dataset-specific model reconstructs A/T/G/C probabilities at every site and can be used to produce a substantially denser matrix for downstream phylogenetic/genetic-type analyses.
+Single-cell RNA sequencing (scRNA-seq) can provide both expression measurements and genetic variant calls for individual cells, but the resulting scRNA-seq alignment are extremely sparse and contain false-positive and false-negative base calls. **ssSTICI** adapts the STICI Split-Transformer with Integrated Convolutions framework to this setting by training a separate model **de novo for each sparse scRNA-seq alignment**. The trained sample-specific model reconstructs A/T/G/C probabilities at every site and can be used to produce a substantially denser matrix for downstream phylogenetic/genetic-type analyses.
 
 Upstream STICI resources:
 
