@@ -1,4 +1,4 @@
-name: dsstici-tf214
+name: ssstici-tf214
 channels:
   - conda-forge
 dependencies:
