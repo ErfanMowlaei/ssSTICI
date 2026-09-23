@@ -5,12 +5,12 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=120:00:00
-#SBATCH --job-name=dsSTICI
-#SBATCH --output=dsSTICI-%j.out
+#SBATCH --job-name=ssSTICI
+#SBATCH --output=ssSTICI-%j.out
 
 
 # -----------------------------------------------------------------------------
-# One-dataset dsSTICI training + imputation job.
+# One-dataset ssSTICI training + imputation job.
 #
 # Required at submission time:
 #   DATASET_NAME   short label used in output paths
@@ -18,8 +18,8 @@
 #
 # Optional:
 #   TARGET_FASTA   FASTA to impute; defaults to REF_FASTA
-#   SAVE_DIR       defaults to ./results/dsSTICI_${DATASET_NAME}
-#   CONDA_ENV      defaults to dsstici-tf214
+#   SAVE_DIR       defaults to ./results/ssSTICI_${DATASET_NAME}
+#   CONDA_ENV      defaults to ssstici-tf214
 #   CUDA_MODULE    defaults to cuda (cluster-specific; set empty to skip)
 #   RUN_FASTTREE   0/1; defaults to 0
 #   FASTTREE_BIN   required only when RUN_FASTTREE=1
@@ -32,9 +32,9 @@
 : "${REF_FASTA:?Set REF_FASTA to the sparse training FASTA or FASTA.GZ}"
 
 TARGET_FASTA="${TARGET_FASTA:-${REF_FASTA}}"
-SAVE_DIR="${SAVE_DIR:-${SLURM_SUBMIT_DIR:-$PWD}/results/dsSTICI_${DATASET_NAME}}"
-SCRIPT="${SCRIPT:-${SLURM_SUBMIT_DIR:-$PWD}/dsSTICI.py}"
-CONDA_ENV="${CONDA_ENV:-dsstici-tf214}"
+SAVE_DIR="${SAVE_DIR:-${SLURM_SUBMIT_DIR:-$PWD}/results/ssSTICI_${DATASET_NAME}}"
+SCRIPT="${SCRIPT:-${SLURM_SUBMIT_DIR:-$PWD}/ssSTICI.py}"
+CONDA_ENV="${CONDA_ENV:-ssstici-tf214}"
 CONDA_SH="${CONDA_SH:-}"
 CUDA_MODULE="${CUDA_MODULE:-cuda}"
 
@@ -79,7 +79,7 @@ fi
 conda activate "${CONDA_ENV}"
 
 if [[ ! -f "${SCRIPT}" ]]; then
-    echo "ERROR: dsSTICI script not found: ${SCRIPT}" >&2
+    echo "ERROR: ssSTICI script not found: ${SCRIPT}" >&2
     exit 2
 fi
 if [[ ! -f "${REF_FASTA}" ]]; then
@@ -94,7 +94,7 @@ fi
 mkdir -p "${SAVE_DIR}"
 
 echo "============================================================"
-echo "dsSTICI job"
+echo "ssSTICI job"
 echo "Job ID:              ${SLURM_JOB_ID:-not-slurm}"
 echo "Dataset:             ${DATASET_NAME}"
 echo "Node:                $(hostname)"
@@ -170,7 +170,7 @@ if [[ "${RUN_FASTTREE}" == "1" ]]; then
 fi
 
 echo "============================================================"
-echo "dsSTICI job complete"
+echo "ssSTICI job complete"
 echo "End: $(date +'%Y-%m-%d %H:%M:%S')"
 echo "Outputs: ${SAVE_DIR}/out"
 echo "============================================================"
