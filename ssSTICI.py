@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ssSTICI: dataset-specific STICI for sparse scRNA-seq cell-variant matrices.
+"""ssSTICI: sample-specific STICI for sparse scRNA-seq cell-variant matrices.
 
 This implementation targets TensorFlow 2.14 and is adapted from the STICI
 Split-Transformer with Integrated Convolutions architecture.  It trains a
