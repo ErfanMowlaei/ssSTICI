@@ -1,4 +1,4 @@
-# dsSTICI
+# ssSTICI
 
 **Dataset-specific Split-Transformer with Integrated Convolutions for sparse scRNA-seq cell-variant imputation**
 
@@ -8,14 +8,14 @@ Code accompanying the manuscript:
 
 ## Overview
 
-Single-cell RNA sequencing (scRNA-seq) can provide both expression measurements and genetic variant calls for individual cells, but the resulting scRNA-seq alignment are extremely sparse and contain false-positive and false-negative base calls. **dsSTICI** adapts the STICI Split-Transformer with Integrated Convolutions framework to this setting by training a separate model **de novo for each sparse scRNA-seq alignment**. The trained dataset-specific model reconstructs A/T/G/C probabilities at every site and can be used to produce a substantially denser matrix for downstream phylogenetic/genetic-type analyses.
+Single-cell RNA sequencing (scRNA-seq) can provide both expression measurements and genetic variant calls for individual cells, but the resulting scRNA-seq alignment are extremely sparse and contain false-positive and false-negative base calls. **ssSTICI** adapts the STICI Split-Transformer with Integrated Convolutions framework to this setting by training a separate model **de novo for each sparse scRNA-seq alignment**. The trained dataset-specific model reconstructs A/T/G/C probabilities at every site and can be used to produce a substantially denser matrix for downstream phylogenetic/genetic-type analyses.
 
 Upstream STICI resources:
 
 - STICI paper: https://www.nature.com/articles/s41467-025-56273-3
 - STICI source code: https://github.com/shilab/STICI
 
-This repository is intended to make the dsSTICI implementation self-contained. It should not be necessary to refer to unpublished changes to the upstream STICI code in order to understand the architecture, masking procedure, loss, or training parameters used here.
+This repository is intended to make the ssSTICI implementation self-contained. It should not be necessary to refer to unpublished changes to the upstream STICI code in order to understand the architecture, masking procedure, loss, or training parameters used here.
 
 ---
 
@@ -27,9 +27,9 @@ The distinction between **architecture changes** and **training/application chan
 
 The overall STICI design is retained: learned categorical and positional embeddings, overlapping local chunks, multi-head attention, integrated multi-kernel 1D convolution blocks, cross-attention, residual connections, and a convolutional output head.
 
-However, dsSTICI is **not an exact copy of the public STICI architecture**. The principal architecture is intact but input, output, and losses are adapted:
+However, ssSTICI is **not an exact copy of the public STICI architecture**. The principal architecture is intact but input, output, and losses are adapted:
 
-| Component | Public STICI | dsSTICI |
+| Component | Public STICI | ssSTICI |
 |---|---|---|
 | Input representation | genotype/imputation representation used by STICI | 5-state nucleotide input: `A`, `T`, `G`, `C`, `?` |
 | Prediction head | genotype probabilities | 4-state base probabilities: `A`, `T`, `G`, `C` |
@@ -39,12 +39,12 @@ However, dsSTICI is **not an exact copy of the public STICI architecture**. The 
 
 The main methodological changes for the scRNA-seq application are:
 
-1. **One model is trained de novo per scRNA-seq alignment.** There is no external reference panel shared across datasets in the standard dsSTICI use case.
+1. **One model is trained de novo per scRNA-seq alignment.** There is no external reference panel shared across datasets in the standard ssSTICI use case.
 2. **Observed-base masking is dataset-specific training corruption.** For each training example, a fixed fraction `--mr` of positions that are currently observed is changed to `?` in the input. Positions already missing remain missing.
 3. **Originally missing target positions do not contribute to the loss.** The target is the uncorrupted sequence, but loss is evaluated only where the original target has an observed A/T/G/C call.
 4. **Loss is evaluated on all originally observed target positions, not only positions newly masked for that training pass.** Thus both masked and still-visible observed bases contribute to reconstruction training.
-5. **The loss is categorical cross-entropy + KL divergence only.** dsSTICI does **not** use the MaCH/Minimac-style R-squared term present as an optional/default-on term in the public STICI HPC implementation. Categorical cross-entropy and KL divergence themselves are inherited from STICI; they are not new loss families introduced by dsSTICI.
-6. **There is no train/validation split in this dsSTICI script.** Learning-rate reduction and early stopping monitor training `rec_loss`.
+5. **The loss is categorical cross-entropy + KL divergence only.** ssSTICI does **not** use the MaCH/Minimac-style R-squared term present as an optional/default-on term in the public STICI HPC implementation. Categorical cross-entropy and KL divergence themselves are inherited from STICI; they are not new loss families introduced by ssSTICI.
+6. **There is no train/validation split in this ssSTICI script.** Learning-rate reduction and early stopping monitor training `rec_loss`.
 7. **The optimizer remains LAMB**, as in the STICI implementation used as the starting point.
 
 ### Exact reconstruction objective
@@ -71,7 +71,7 @@ reconstruction loss = CCE(y, p) + KLD(y || p)
 
 ```bash
 conda env create -f environment.yml
-conda activate dsstici-tf214
+conda activate ssSTICI-tf214
 ```
 
 TensorFlow 2.14 targets CUDA 11.8-era GPU libraries. On an HPC system, load the site's compatible CUDA/cuDNN module before running if those libraries are provided by the cluster. The included SLURM script uses `CUDA_MODULE=cuda` by default and allows this module name to be overridden.
@@ -109,7 +109,7 @@ Input is converted to uppercase. Other symbols are treated as missing (`?`). Mul
 The following command makes all model/training choices explicit and corresponds to the important settings in the active TNBC5 block of the supplied historical SLURM job, while also making previously implicit defaults explicit:
 
 ```bash
-python dsSTICI.py \
+python ssSTICI.py \
   --mode train \
   --ref path/to/input.fa.gz \
   --save-dir results/save-dir \
@@ -129,7 +129,7 @@ python dsSTICI.py \
   --verbose 2
 ```
 
-`--restart-training 1` deletes an existing `--save-dir`; use `false` to resume completed/pending outer chunks. When resuming, dsSTICI checks the saved training-file SHA256 and the training/model arguments and refuses to mix incompatible chunks in one run directory.
+`--restart-training 1` deletes an existing `--save-dir`; use `false` to resume completed/pending outer chunks. When resuming, ssSTICI checks the saved training-file SHA256 and the training/model arguments and refuses to mix incompatible chunks in one run directory.
 
 ### Training parameter reference
 
@@ -163,7 +163,7 @@ There is no validation dataset in this implementation, so both callbacks operate
 ## Imputation
 
 ```bash
-python dsSTICI.py \
+python ssSTICI.py \
   --mode impute \
   --save-dir results/save-dir \
   --ref path/to/input.fa.gz \
@@ -173,7 +173,7 @@ python dsSTICI.py \
   --verbose 2
 ```
 
-For inference, providing `--ref` is optional during imputation, but supplying it is useful because dsSTICI verifies that its site count matches the saved model.
+For inference, providing `--ref` is optional during imputation, but supplying it is useful because ssSTICI verifies that its site count matches the saved model.
 
 The confidence threshold is applied to the maximum A/T/G/C probability. If the maximum is less than or equal to the threshold, the FASTA output contains `-` at that site.
 
@@ -191,8 +191,8 @@ results/save-dir/
 ├── commandline_args.json
 ├── models/
 │   ├── chunks_info.json
-│   ├── dsstici_chunk_001.keras
-│   ├── dsstici_chunk_002.keras
+│   ├── ssSTICI_chunk_001.keras
+│   ├── ssSTICI_chunk_002.keras
 │   └── ...
 └── out/
     ├── predictions_confidence_0.7.fasta
@@ -206,7 +206,7 @@ results/save-dir/
 
 ## SLURM
 
-`slurm_dsSTICI.job` replaces the repeated hard-coded dataset blocks in the historical job with one reusable one-dataset job. Submit one job per dataset and pass dataset-specific paths/parameters through environment variables.
+`slurm_ssSTICI.job` replaces the repeated hard-coded dataset blocks in the historical job with one reusable one-dataset job. Submit one job per dataset and pass dataset-specific paths/parameters through environment variables.
 
 Example for TNBC5:
 
@@ -219,7 +219,7 @@ LEARNING_RATE=5e-4,\
 BATCH_SIZE=4,\
 MASK_RATE=0.8,\
 RANDOM_SEED=2024 \
-slurm_dsSTICI.job
+slurm_ssSTICI.job
 ```
 
 The job defaults to deterministic TensorFlow operations and explicitly passes the model/training hyperparameters. It leaves outputs in `SAVE_DIR/out` rather than repeatedly moving/renaming directories.
@@ -234,7 +234,7 @@ DATASET_NAME=TNBC5,\
 REF_FASTA=/path/to/TNBC5.fa.gz,\
 RUN_FASTTREE=1,\
 FASTTREE_BIN=/path/to/FastTreeMP \
-slurm_dsSTICI.job
+slurm_ssSTICI.job
 ```
 
 The model environment does not install FastTree; provide the executable separately when this option is used.
