@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""dsSTICI: dataset-specific STICI for sparse scRNA-seq cell-variant matrices.
+"""ssSTICI: dataset-specific STICI for sparse scRNA-seq cell-variant matrices.
 
 This implementation targets TensorFlow 2.14 and is adapted from the STICI
 Split-Transformer with Integrated Convolutions architecture.  It trains a
@@ -39,7 +39,7 @@ from tensorflow.keras.utils import to_categorical
 from tqdm import tqdm
 
 
-MODEL_NAME = "dsSTICI"
+MODEL_NAME = "ssSTICI"
 CODE_VERSION = "1.0-clean"
 ALPHABET = "ATGC?"
 MISSING_SYMBOL = "?"
@@ -83,7 +83,7 @@ def str_to_bool(value: Union[str, bool, int]) -> bool:
 
 
 def seed_everything(seed: int, deterministic_ops: bool = False) -> None:
-    """Seed Python, NumPy, and TensorFlow for reproducible dsSTICI runs."""
+    """Seed Python, NumPy, and TensorFlow for reproducible ssSTICI runs."""
     seed = int(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
@@ -132,9 +132,9 @@ def _strip_legacy_keys(config: Dict[str, Any], keys: Iterable[str]) -> Dict[str,
 # Custom layers
 # -----------------------------------------------------------------------------
 
-@keras.utils.register_keras_serializable(package="dsSTICI")
+@keras.utils.register_keras_serializable(package="ssSTICI")
 class CrossAttentionLayer(layers.Layer):
-    """Cross-attention block used inside each dsSTICI internal chunk."""
+    """Cross-attention block used inside each ssSTICI internal chunk."""
 
     def __init__(
         self,
@@ -168,7 +168,7 @@ class CrossAttentionLayer(layers.Layer):
         )
         self.add0 = layers.Add()
         self.add1 = layers.Add()
-        # key_dim intentionally matches the historical dsSTICI/STICI implementation.
+        # key_dim intentionally matches the historical ssSTICI/STICI implementation.
         self.attention = layers.MultiHeadAttention(
             num_heads=self.n_heads,
             key_dim=self.local_dim,
@@ -229,9 +229,9 @@ class CrossAttentionLayer(layers.Layer):
         return outputs, attention_scores
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI", name="SelfAttentionBlock")
+@keras.utils.register_keras_serializable(package="ssSTICI", name="SelfAttentionBlock")
 class SelfAttentionBlock(layers.Layer):
-    """dsSTICI self-attention block.
+    """ssSTICI self-attention block.
 
     This is the architecture-level self-attention modification relative to the
     public STICI implementation: it applies LayerNorm before multi-head attention,
@@ -317,7 +317,7 @@ class SelfAttentionBlock(layers.Layer):
         return out1 + ffn_output, attention_scores
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI")
+@keras.utils.register_keras_serializable(package="ssSTICI")
 class CatEmbeddings(layers.Layer):
     """Learned categorical base embedding plus learned positional embedding."""
 
@@ -398,7 +398,7 @@ class CatEmbeddings(layers.Layer):
         return immediate_result + self.position_embedding(self.positions)
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI")
+@keras.utils.register_keras_serializable(package="ssSTICI")
 class SelfAttnChunk(layers.Layer):
     def __init__(
         self,
@@ -450,7 +450,7 @@ class SelfAttnChunk(layers.Layer):
         return self.attention_block(inputs, training=training)
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI")
+@keras.utils.register_keras_serializable(package="ssSTICI")
 class CrossAttnChunk(layers.Layer):
     def __init__(
         self,
@@ -503,7 +503,7 @@ class CrossAttnChunk(layers.Layer):
         return self.attention_block(inputs, training=training)
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI")
+@keras.utils.register_keras_serializable(package="ssSTICI")
 class ConvBlock(layers.Layer):
     """Integrated multi-kernel 1D convolution block retained from STICI."""
 
@@ -577,7 +577,7 @@ class ConvBlock(layers.Layer):
         return self.activation(xa)
 
 
-@keras.utils.register_keras_serializable(package="dsSTICI", name="chunk_module")
+@keras.utils.register_keras_serializable(package="ssSTICI", name="chunk_module")
 def chunk_module(
     input_len: int,
     embed_dim: int,
@@ -587,7 +587,7 @@ def chunk_module(
     dropout_rate: float = 0.25,
     cross_attention_heads: int = 8,
 ) -> keras.Model:
-    """Construct one internal dsSTICI chunk model."""
+    """Construct one internal ssSTICI chunk model."""
     projection_dim = int(embed_dim)
     inputs = layers.Input(shape=(int(input_len), projection_dim))
 
@@ -616,16 +616,16 @@ def chunk_module(
     return keras.Model(
         inputs=inputs,
         outputs=[xa, self_attention_scores, cross_attention_scores],
-        name="dsstici_internal_chunk",
+        name="ssstici_internal_chunk",
     )
 
 
 # -----------------------------------------------------------------------------
-# dsSTICI model
+# ssSTICI model
 # -----------------------------------------------------------------------------
 
-@keras.utils.register_keras_serializable(package="dsSTICI", name="dsSTICI")
-class DsSTICI(keras.Model):
+@keras.utils.register_keras_serializable(package="ssSTICI", name="ssSTICI")
+class SsSTICI(keras.Model):
     def __init__(
         self,
         embed_dim: int,
@@ -733,7 +733,7 @@ class DsSTICI(keras.Model):
         return config
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "DsSTICI":
+    def from_config(cls, config: Dict[str, Any]) -> "SsSTICI":
         config = _strip_legacy_keys(
             config,
             {
@@ -884,11 +884,11 @@ class DsSTICI(keras.Model):
 
 
 # Legacy names are intentionally mapped to the cleaned implementations so older
-# checkpoints have a best-effort load path. New checkpoints use dsSTICI names.
+# checkpoints have a best-effort load path. New checkpoints use ssSTICI names.
 custom_objects = {
-    "dsSTICI": DsSTICI,
-    "DsSTICI": DsSTICI,
-    "SplitTransformer": DsSTICI,
+    "ssSTICI": SsSTICI,
+    "SsSTICI": SsSTICI,
+    "SplitTransformer": SsSTICI,
     "CrossAttentionLayer": CrossAttentionLayer,
     "SelfAttentionBlock": SelfAttentionBlock,
     "MaskedTransformerBlock": SelfAttentionBlock,
@@ -899,7 +899,7 @@ custom_objects = {
     "ConvBlock": ConvBlock,
     "chunk_module": chunk_module,
     # Registered-name aliases emitted by the historical implementation.
-    "MyModels>SplitTransformer": DsSTICI,
+    "MyModels>SplitTransformer": SsSTICI,
     "MyLayers>CrossAttentionLayer": CrossAttentionLayer,
     "MyLayers>MaskedTransformerBlock": SelfAttentionBlock,
     "MyLayers>CatEmbeddings": CatEmbeddings,
@@ -915,8 +915,8 @@ custom_objects = {
 # Model creation and training helpers
 # -----------------------------------------------------------------------------
 
-def create_model(model_args: Dict[str, Any]) -> DsSTICI:
-    model = DsSTICI(
+def create_model(model_args: Dict[str, Any]) -> SsSTICI:
+    model = SsSTICI(
         embed_dim=model_args["embedding_dim"],
         num_heads=model_args["num_heads"],
         chunk_size=model_args["chunk_size"],
@@ -1011,7 +1011,7 @@ class DataReader:
         lengths = {len(seq) for seq in mapped_sequences}
         if len(lengths) != 1:
             raise ValueError(
-                f"All dsSTICI FASTA records must contain the same number of sites; "
+                f"All ssSTICI FASTA records must contain the same number of sites; "
                 f"found lengths {sorted(lengths)} in {file_path}."
             )
         if next(iter(lengths)) == 0:
@@ -1045,7 +1045,7 @@ class DataReader:
         site_count = int(self.target_set.shape[1])
         if expected_site_count is not None and site_count != int(expected_site_count):
             raise ValueError(
-                f"Target contains {site_count} sites, but the trained dsSTICI run expects "
+                f"Target contains {site_count} sites, but the trained ssSTICI run expects "
                 f"{int(expected_site_count)} sites in the same order."
             )
         pprint(f"Target matrix: {self.target_set.shape[0]} cells x {site_count} variant sites.")
@@ -1164,7 +1164,7 @@ def load_chunk_info(save_dir: Union[str, Path], number_of_chunks: int) -> Dict[i
     if not isinstance(loaded, dict) or len(loaded) != number_of_chunks:
         warn("Ignoring chunks_info.json because its chunk count does not match this run.")
         return expected
-    pprint("Resuming dsSTICI training from chunk status file.")
+    pprint("Resuming ssSTICI training from chunk status file.")
     return {int(key): bool(value) for key, value in loaded.items()}
 
 
@@ -1175,7 +1175,7 @@ def save_chunk_status(save_dir: Union[str, Path], chunk_info: Dict[int, bool]) -
 
 
 def model_path(save_dir: Union[str, Path], chunk_index: int) -> Path:
-    return Path(save_dir) / "models" / f"dsstici_chunk_{chunk_index + 1:03d}.keras"
+    return Path(save_dir) / "models" / f"ssstici_chunk_{chunk_index + 1:03d}.keras"
 
 
 def legacy_model_path(save_dir: Union[str, Path], chunk_index: int) -> Path:
@@ -1373,7 +1373,7 @@ def validate_resume_configuration(
 
     if mismatches:
         raise ValueError(
-            "Refusing to resume a dsSTICI run with training settings that differ "
+            "Refusing to resume a ssSTICI run with training settings that differ "
             "from the saved metadata:\n  - " + "\n  - ".join(mismatches)
         )
 
@@ -1387,7 +1387,7 @@ def load_training_metadata(save_dir: Union[str, Path]) -> Optional[Dict[str, Any
     if legacy_path.is_file():
         with open(legacy_path) as fin:
             return {
-                "model_name": "legacy-dsSTICI",
+                "model_name": "legacy-ssSTICI",
                 "training_arguments": json.load(fin),
             }
     return None
@@ -1555,7 +1555,7 @@ def impute_the_target(args: argparse.Namespace) -> None:
         if not args.ref:
             raise ValueError(
                 "This is a legacy run without saved site_count metadata. Supply --ref "
-                "during imputation so dsSTICI can recover the training site count."
+                "during imputation so ssSTICI can recover the training site count."
             )
         ref_reader = DataReader()
         ref_reader.assign_training_set(args.ref)
@@ -1667,9 +1667,9 @@ def impute_the_target(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "dsSTICI: train a dataset-specific Split-Transformer with Integrated "
+            "ssSTICI: train a dataset-specific Split-Transformer with Integrated "
             "Convolutions on a sparse cell-variant FASTA matrix, or impute with "
-            "a previously trained dsSTICI run."
+            "a previously trained ssSTICI run."
         )
     )
     parser.add_argument(
@@ -1705,7 +1705,7 @@ def parse_args() -> argparse.Namespace:
         "--save-dir",
         type=str,
         required=True,
-        help="Directory used to save/load dsSTICI models, metadata, and outputs.",
+        help="Directory used to save/load ssSTICI models, metadata, and outputs.",
     )
     parser.add_argument(
         "--which-chunk",
@@ -1783,7 +1783,7 @@ def parse_args() -> argparse.Namespace:
         "--cross-attention-heads",
         type=int,
         default=8,
-        help="Number of cross-attention heads; historical dsSTICI value is 8 (default: 8).",
+        help="Number of cross-attention heads; historical ssSTICI value is 8 (default: 8).",
     )
     parser.add_argument(
         "--embed-dim",
