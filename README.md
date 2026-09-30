@@ -169,7 +169,7 @@ python ssSTICI.py \
   --ref path/to/input.fa.gz \
   --target path/to/input.fa.gz \
   --batch-size-per-gpu 4 \
-  --confidence-threshold 0.7 \
+  --confidence-threshold 0.0 \
   --verbose 2
 ```
 
@@ -179,6 +179,7 @@ The confidence threshold is applied to the maximum A/T/G/C probability. If the m
 
 **Important:** the prediction FASTA contains the model's predicted call at **every site**, including sites that were observed in the input. It is not a patching operation that automatically copies observed input bases back into the output.
 
+**Optional:** We suggest imputing using a confidence-threshold of 0.0 and then using filter_fasta.py script to purge out training sites (because they contain errors) and low confidence sites before running fasttree on the alignment. A TBP/confidence-threshold of 0.99 is recommended based on our findings in the paper.
 ---
 
 ## Outputs and run metadata
@@ -195,7 +196,7 @@ results/save-dir/
 │   ├── ssSTICI_chunk_002.keras
 │   └── ...
 └── out/
-    ├── predictions_confidence_0.7.fasta
+    ├── predictions_confidence_0.0.fasta
     ├── top_probability_per_site.tsv
     └── imputation_metadata.json
 ```
